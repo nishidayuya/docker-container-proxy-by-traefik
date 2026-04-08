@@ -1,0 +1,37 @@
+services:
+  traefik:
+    image: traefik:v3.1
+    ports:
+      - "80:80"
+      - "8080:8080"
+    volumes:
+      - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
+      - ./config:/config
+    networks:
+      - traefik-net
+    restart: unless-stopped
+
+  generator:
+    build: ./generator
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+      - ./config:/config
+    environment:
+      - DYNAMIC_CONFIG_PATH=/config/dynamic_conf.yml
+    networks:
+      - traefik-net
+    restart: unless-stopped
+
+  # テスト用コンテナ: some-nginx
+  some-nginx:
+    image: nginx:alpine
+    container_name: some-nginx
+    expose:
+      - "80"
+      - "8080" # nginx default は 80 ですが、テスト用に複数 expose
+    networks:
+      - traefik-net
+
+networks:
+  traefik-net:
+    name: traefik-net
