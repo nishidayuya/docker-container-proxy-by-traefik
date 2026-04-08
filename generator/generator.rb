@@ -16,15 +16,16 @@ def generate_config
     info = container.json
     container_name = info['Name'].sub(%r{^/}, '') # remove leading slash
     
-    # Use the first available network's IP address
-    network_settings = info['NetworkSettings']
-    ip_address = network_settings['Networks'].values.first&.[]('IPAddress')
+    # Select the IP address from 'traefik-net' if it exists, otherwise use the first network
+    networks = info['NetworkSettings']['Networks']
+    network = networks['traefik-net'] || networks.values.first
+    ip_address = network&.[]('IPAddress')
     
     next if ip_address.nil? || ip_address.empty?
 
     # Find exposed ports
     exposed_ports = (info['Config']['ExposedPorts'] || {}).keys.map { |p| p.split('/').first }
-    network_ports = (network_settings['Ports'] || {}).keys.map { |p| p.split('/').first }
+    network_ports = (info['NetworkSettings']['Ports'] || {}).keys.map { |p| p.split('/').first }
     
     all_ports = (exposed_ports + network_ports).uniq
 

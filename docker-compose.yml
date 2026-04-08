@@ -5,7 +5,7 @@ services:
       - "127.0.0.1:${DOCKER_CONTAINER_PROXY_BY_TRAEFIK_PORT:-80}:80"
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./config:/config
+      - ./config:/config:ro
     networks:
       - traefik-net
     restart: unless-stopped
