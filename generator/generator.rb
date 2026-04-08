@@ -49,6 +49,12 @@ def generate_config
     end
   end
 
+  # Add router for the dashboard at http://localhost/
+  http_routers['dashboard-localhost'] = {
+    'rule' => 'Host(`localhost`)',
+    'service' => 'api@internal'
+  }
+
   config = {
     'http' => {
       'routers' => http_routers,
