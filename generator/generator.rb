@@ -2,12 +2,20 @@ require 'docker'
 require 'yaml'
 require 'fileutils'
 
+STDOUT.sync = true
+
 # Traefik's dynamic configuration file path
 CONFIG_PATH = ENV.fetch('DYNAMIC_CONFIG_PATH', '/config/dynamic_conf.yml')
 
 def generate_config
   puts "Scanning containers..."
-  containers = Docker::Container.all
+  begin
+    containers = Docker::Container.all
+    puts "Found #{containers.size} containers."
+  rescue => e
+    warn "Error fetching containers: #{e.message}"
+    return
+  end
 
   http_routers = {}
   http_services = {}
