@@ -1,11 +1,12 @@
 require 'docker'
 require 'yaml'
 require 'fileutils'
+require 'pathname'
 
 STDOUT.sync = true
 
 # Traefik's dynamic configuration file path
-CONFIG_PATH = ENV.fetch('DYNAMIC_CONFIG_PATH', '/config/dynamic_conf.yml')
+CONFIG_PATH = Pathname.new(ENV.fetch('DYNAMIC_CONFIG_PATH', '/config/dynamic_conf.yml'))
 
 def generate_config
   puts "Scanning containers..."
@@ -72,8 +73,8 @@ def generate_config
   }
 
   # Ensure directory exists and write the config as YAML
-  FileUtils.mkdir_p(File.dirname(CONFIG_PATH))
-  File.write(CONFIG_PATH, YAML.dump(config))
+  CONFIG_PATH.dirname.mkpath
+  CONFIG_PATH.write(YAML.dump(config))
   puts "Updated #{CONFIG_PATH} with #{http_routers.size} routers."
 end
 
