@@ -1,5 +1,5 @@
 require 'docker'
-require 'json'
+require 'yaml'
 require 'fileutils'
 
 # Traefik's dynamic configuration file path
@@ -56,9 +56,9 @@ def generate_config
     }
   }
 
-  # Ensure directory exists and write the config (using JSON format with .yml extension for safety)
+  # Ensure directory exists and write the config as YAML
   FileUtils.mkdir_p(File.dirname(CONFIG_PATH))
-  File.write(CONFIG_PATH, JSON.pretty_generate(config))
+  File.write(CONFIG_PATH, YAML.dump(config))
   puts "Updated #{CONFIG_PATH} with #{http_routers.size} routers."
 end
 
