@@ -6,7 +6,7 @@ require 'pathname'
 STDOUT.sync = true
 
 # Traefik's dynamic configuration file path
-CONFIG_PATH = Pathname.new(ENV.fetch('DYNAMIC_CONFIG_PATH', '/config/dynamic_conf.yml'))
+CONFIG_PATH = Pathname(ENV.fetch('DYNAMIC_CONFIG_PATH', '/config/dynamic_conf.yml'))
 
 def generate_config
   puts "Scanning containers..."
@@ -73,7 +73,7 @@ def generate_config
   }
 
   # Ensure directory exists and write the config as YAML
-  CONFIG_PATH.dirname.mkpath
+  CONFIG_PATH.parent.mkpath
   CONFIG_PATH.write(YAML.dump(config))
   puts "Updated #{CONFIG_PATH} with #{http_routers.size} routers."
 end
