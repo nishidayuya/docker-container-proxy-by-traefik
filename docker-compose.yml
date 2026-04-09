@@ -7,8 +7,6 @@ services:
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./config:/config:ro
-    networks:
-      - traefik-net
     restart: unless-stopped
 
   generator:
@@ -19,10 +17,4 @@ services:
     environment:
       - DYNAMIC_CONFIG_PATH=/config/dynamic_conf.yml
       - TRAEFIK_CONTAINER_NAME=traefik-proxy
-    networks:
-      - traefik-net
     restart: unless-stopped
-
-networks:
-  traefik-net:
-    name: traefik-net
