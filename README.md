@@ -33,6 +33,10 @@ This will start:
 Once started, you can access your containers using the following URL pattern:
 `http://<container-name>-<port>.localhost/`
 
+> [!NOTE]
+> If the container name contains underscores (`_`), they will be automatically replaced with hyphens (`-`).
+> For example, a container named `my_web_app` will be accessible at `http://my-web-app-80.localhost/`.
+
 For example, if you run a standalone nginx:
 ```bash
 docker run --name my-nginx -d nginx:alpine
