@@ -7,14 +7,15 @@ STDOUT.sync = true
 
 # Traefik's dynamic configuration file path
 CONFIG_PATH = Pathname(ENV.fetch('DYNAMIC_CONFIG_PATH', '/config/dynamic_conf.yml'))
-TRAEFIK_NAME = ENV.fetch('TRAEFIK_CONTAINER_NAME', 'traefik-proxy')
+ACTUAL_TRAEFIK_NAME = ENV.fetch('TRAEFIK_CONTAINER_NAME', 'traefik-proxy')
+TRAEFIK_NAME = ACTUAL_TRAEFIK_NAME.gsub('_', '-')
 
 def generate_config
   puts "Scanning containers at #{Time.now}..."
   begin
     # Explicitly set all: true to get all containers
     containers = Docker::Container.all(all: true)
-    traefik_container = Docker::Container.get(TRAEFIK_NAME)
+    traefik_container = Docker::Container.get(ACTUAL_TRAEFIK_NAME)
     my_id = Docker::Container.get('hostname').id rescue nil
   rescue => e
     warn "Error initializing: #{e.message}. Retrying..."
@@ -28,7 +29,7 @@ def generate_config
     begin
       info = container.json
       container_id = info['Id']
-      container_name = info['Name'].sub(%r{^/}, '')
+      container_name = info['Name'].sub(%r{^/}, '').gsub('_', '-')
       
       next unless info['State']['Status'] == 'running'
       next if container_name == TRAEFIK_NAME || container_id == my_id
@@ -38,7 +39,7 @@ def generate_config
       networks.each do |net_name, _|
         next if net_name == 'none' || net_name == 'host'
         
-        traefik_info = Docker::Container.get(TRAEFIK_NAME).json
+        traefik_info = Docker::Container.get(ACTUAL_TRAEFIK_NAME).json
         unless traefik_info['NetworkSettings']['Networks'].key?(net_name)
           puts "  Connecting Traefik to network: #{net_name} (from #{container_name})"
           begin
