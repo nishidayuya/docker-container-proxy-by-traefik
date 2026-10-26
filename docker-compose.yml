@@ -7,7 +7,7 @@ services:
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./config:/config:ro
-    restart: unless-stopped
+    restart: always
 
   generator:
     build: ./generator
