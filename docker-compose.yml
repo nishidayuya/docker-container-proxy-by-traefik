@@ -3,7 +3,7 @@ services:
     image: traefik:v3.6.13
     container_name: traefik-proxy
     ports:
-      - "127.0.0.1:${DOCKER_CONTAINER_PROXY_BY_TRAEFIK_PORT:-80}:80"
+      - "${DOCKER_CONTAINER_PROXY_BY_TRAEFIK_PORT:-127.0.0.1:80}:80"
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
       - ./config:/config:ro
