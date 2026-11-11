@@ -6,16 +6,19 @@ services:
       - "${DOCKER_CONTAINER_PROXY_BY_TRAEFIK_PORT:-127.0.0.1:80}:80"
     volumes:
       - ./traefik/traefik.yml:/etc/traefik/traefik.yml:ro
-      - ./config:/config:ro
+      - config:/config:ro
     restart: always
 
   generator:
     build: ./generator
     volumes:
       - /var/run/docker.sock:/var/run/docker.sock
-      - ./config:/config
+      - config:/config
     environment:
       - DYNAMIC_CONFIG_PATH=/config/dynamic_conf.yml
       - TRAEFIK_CONTAINER_NAME=traefik-proxy
       - DOCKER_CONTAINER_PROXY_BY_TRAEFIK_EXPIRE_SEC=${DOCKER_CONTAINER_PROXY_BY_TRAEFIK_EXPIRE_SEC:-300}
     restart: unless-stopped
+
+volumes:
+  config:
