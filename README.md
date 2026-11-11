@@ -59,10 +59,10 @@ Then access it via `http://localhost:8000/`.
 
 ### Keeping Routes on Transient Errors
 
-If the Generator fails to inspect a running container (e.g. a transient Docker API error), it keeps the routes from the last successful scan. The routes are removed only after the scans keep failing for `TRAEFIK_GENERATOR_EXPIRE_SEC` seconds (default: `300`). Routes of stopped or removed containers are removed immediately.
+If the Generator fails to inspect a running container (e.g. a transient Docker API error), it keeps the routes from the last successful scan. The routes are removed only after the scans keep failing for `DOCKER_CONTAINER_PROXY_BY_TRAEFIK_EXPIRE_SEC` seconds (default: `300`). Routes of stopped or removed containers are removed immediately.
 
 ```bash
-TRAEFIK_GENERATOR_EXPIRE_SEC=600 docker compose up -d
+DOCKER_CONTAINER_PROXY_BY_TRAEFIK_EXPIRE_SEC=600 docker compose up -d
 ```
 
 ### How it Works

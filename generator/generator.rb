@@ -15,7 +15,7 @@ TRAEFIK_NAME = ACTUAL_TRAEFIK_NAME.gsub('_', '-')
 CONFIG_LOCK = Mutex.new
 # Routes of a container are kept for this many seconds after the last
 # successful scan of it, so that transient errors do not remove them.
-EXPIRE_SEC = Integer(ENV.fetch('TRAEFIK_GENERATOR_EXPIRE_SEC', '300'))
+EXPIRE_SEC = Integer(ENV.fetch('DOCKER_CONTAINER_PROXY_BY_TRAEFIK_EXPIRE_SEC', '300'))
 # Container ID => { routers:, services:, succeeded_at: } of the last
 # successful scan. Accessed only while holding CONFIG_LOCK.
 LAST_SUCCEEDED_ENTRIES = {}
