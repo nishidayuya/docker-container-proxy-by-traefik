@@ -77,5 +77,23 @@ The proxy will handle the rest:
 
 ## Architecture
 
-- **Generator (Ruby 4.0.2)**: Watches `/var/run/docker.sock`, manages Traefik's network connections, and writes dynamic configuration to `config/dynamic_conf.yml`.
-- **Traefik (v3.6.13)**: Watches the `config/` directory and applies routing rules in real-time.
+- **Generator (Ruby 4.0.2)**: Watches `/var/run/docker.sock`, manages Traefik's network connections, and writes dynamic configuration to `/config/dynamic_conf.yml`.
+- **Traefik (v3.6.13)**: Watches the `/config` directory and applies routing rules in real-time.
+
+The `/config` directory is a named volume (`config`) shared by both containers, so nothing is written to the host's working tree.
+
+### Inspecting the Generated Configuration
+
+To see the dynamic configuration currently generated:
+
+```bash
+docker compose exec traefik cat /config/dynamic_conf.yml
+```
+
+The routers and services loaded by Traefik can also be checked in the Traefik Dashboard.
+
+The volume persists across `docker compose down`, but the Generator rewrites the configuration right after it starts. To remove the volume as well:
+
+```bash
+docker compose down --volumes
+```
