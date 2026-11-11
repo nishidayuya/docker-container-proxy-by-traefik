@@ -17,4 +17,5 @@ services:
     environment:
       - DYNAMIC_CONFIG_PATH=/config/dynamic_conf.yml
       - TRAEFIK_CONTAINER_NAME=traefik-proxy
+      - TRAEFIK_GENERATOR_EXPIRE_SEC=${TRAEFIK_GENERATOR_EXPIRE_SEC:-300}
     restart: unless-stopped

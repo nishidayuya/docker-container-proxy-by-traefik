@@ -13,6 +13,12 @@ TRAEFIK_NAME = ACTUAL_TRAEFIK_NAME.gsub('_', '-')
 # Serializes generate_config between the event listener thread and the
 # main loop so that they never write the config file concurrently.
 CONFIG_LOCK = Mutex.new
+# Routes of a container are kept for this many seconds after the last
+# successful scan of it, so that transient errors do not remove them.
+EXPIRE_SEC = Integer(ENV.fetch('TRAEFIK_GENERATOR_EXPIRE_SEC', '300'))
+# Container ID => { routers:, services:, succeeded_at: } of the last
+# successful scan. Accessed only while holding CONFIG_LOCK.
+LAST_SUCCEEDED_ENTRIES = {}
 
 def generate_config
   puts "Scanning containers at #{Time.now}..."
@@ -28,8 +34,12 @@ def generate_config
 
   http_routers = {}
   http_services = {}
+  now = Process.clock_gettime(Process::CLOCK_MONOTONIC)
+  alive_container_ids = []
 
   containers.each do |container|
+    # Use the list result so that routes are kept even if container.json fails.
+    alive_container_ids << container.id if container.info['State'] == 'running'
     begin
       info = container.json
       container_id = info['Id']
@@ -37,7 +47,7 @@ def generate_config
       
       next unless info['State']['Status'] == 'running'
       next if container_name == TRAEFIK_NAME || container_id == my_id
-      
+
       # Connect Traefik to all networks of the container
       networks = info['NetworkSettings']['Networks']
       networks.each do |net_name, _|
@@ -59,25 +69,46 @@ def generate_config
       network = info['NetworkSettings']['Networks'].values.find { |n| n['IPAddress'] && !n['IPAddress'].empty? }
       ip_address = network&.[]('IPAddress')
       
-      next if ip_address.nil? || ip_address.empty?
+      raise 'no IP address' if ip_address.nil? || ip_address.empty?
 
       # Ports
       exposed_ports = (info['Config']['ExposedPorts'] || {}).keys.map { |p| p.split('/').first }
       bound_ports = (info['NetworkSettings']['Ports'] || {}).keys.map { |p| p.split('/').first }
       all_ports = (exposed_ports + bound_ports).uniq
       
+      routers = {}
+      services = {}
       all_ports.each do |port|
         service_id = "#{container_name}-#{port}"
         router_id = "#{service_id}-router"
         rule = "Host(`#{container_name}-#{port}.localhost`)"
         url = "http://#{ip_address}:#{port}"
 
-        http_routers[router_id] = { 'rule' => rule, 'service' => service_id }
-        http_services[service_id] = { 'loadBalancer' => { 'servers' => [{ 'url' => url }] } }
+        routers[router_id] = { 'rule' => rule, 'service' => service_id }
+        services[service_id] = { 'loadBalancer' => { 'servers' => [{ 'url' => url }] } }
       end
+      LAST_SUCCEEDED_ENTRIES[container_id] = { routers:, services:, succeeded_at: now }
     rescue => e
       warn "  Error processing #{container.id[0..11]}: #{e.message}"
     end
+  end
+
+  # Forget containers that are no longer running and those that have kept
+  # failing for EXPIRE_SEC seconds. Others reuse their last successful result.
+  LAST_SUCCEEDED_ENTRIES.select! do |container_id, entry|
+    next false unless alive_container_ids.include?(container_id)
+
+    elapsed = now - entry[:succeeded_at]
+    if elapsed >= EXPIRE_SEC
+      warn "  Expired routes of #{container_id[0..11]}: kept failing for #{elapsed.round} seconds"
+      next false
+    end
+
+    true
+  end
+  LAST_SUCCEEDED_ENTRIES.each_value do |entry|
+    http_routers.merge!(entry[:routers])
+    http_services.merge!(entry[:services])
   end
 
   http_routers['dashboard-localhost'] = { 'rule' => 'Host(`localhost`)', 'service' => 'api@internal' }
