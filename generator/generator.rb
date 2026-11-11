@@ -79,9 +79,26 @@ def generate_config
   http_routers['dashboard-localhost'] = { 'rule' => 'Host(`localhost`)', 'service' => 'api@internal' }
   config = { 'http' => { 'routers' => http_routers, 'services' => http_services } }
 
-  CONFIG_PATH.parent.mkpath
-  CONFIG_PATH.write(YAML.dump(config))
+  unless write_config(config)
+    puts "No changes in #{CONFIG_PATH}."
+    return
+  end
+
   puts "Updated #{CONFIG_PATH} with #{http_routers.size} routers."
+end
+
+# Write the config atomically so that Traefik never reads an empty or
+# partially written file. The temporary file has a ".tmp" extension, which
+# Traefik's file provider ignores.
+def write_config(config)
+  content = YAML.dump(config)
+  return false if CONFIG_PATH.exist? && CONFIG_PATH.read == content
+
+  CONFIG_PATH.parent.mkpath
+  tmp_path = CONFIG_PATH.sub_ext("#{CONFIG_PATH.extname}.tmp")
+  tmp_path.write(content)
+  tmp_path.rename(CONFIG_PATH)
+  true
 end
 
 # Event listener in a separate thread
