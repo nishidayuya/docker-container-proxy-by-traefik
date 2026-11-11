@@ -10,6 +10,10 @@ CONFIG_PATH = Pathname(ENV.fetch('DYNAMIC_CONFIG_PATH', '/config/dynamic_conf.ym
 ACTUAL_TRAEFIK_NAME = ENV.fetch('TRAEFIK_CONTAINER_NAME', 'traefik-proxy')
 TRAEFIK_NAME = ACTUAL_TRAEFIK_NAME.gsub('_', '-')
 
+# Serializes generate_config between the event listener thread and the
+# main loop so that they never write the config file concurrently.
+CONFIG_LOCK = Mutex.new
+
 def generate_config
   puts "Scanning containers at #{Time.now}..."
   begin
@@ -109,7 +113,7 @@ Thread.new do
       if %w[start stop die destroy create].include?(event.status)
         puts "Event: #{event.status} on #{event.from}"
         sleep 2
-        generate_config
+        CONFIG_LOCK.synchronize { generate_config }
       end
     end
   rescue => e
@@ -121,6 +125,6 @@ end
 
 # Main loop: periodic scan
 loop do
-  generate_config
+  CONFIG_LOCK.synchronize { generate_config }
   sleep 15
 end
